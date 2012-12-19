@@ -1,7 +1,21 @@
 #!/bin/bash
 # Nagios/Shinken plugin to check the node status on a puppetmaster.
-# The script is originated by Bernd Adamowicz but has been modified to run under Bash 4.1.5 by Daniel Taschik (daniel@taschik.de)
-# Date: 19.12.2012
+# The script was originally created by Bernd Adamowicz.
+#
+# It has been modifiedto run under Bash 4.1.5 and to accept hosts 
+# from /etc/default/check_puppetmaster_masterhttp which are ignored
+# for the status check
+#
+# The /etc/default/check_puppetmaster_masterhttp can contain an entry
+# for ignored hosts in the form of
+#
+# IGNORE_HOSTS="domain.tld domain2.tld"                                                                               
+#
+#
+# Author: Daniel Taschik
+# E-Mail: daniel@taschik.de
+# Date: 12/19/2012
+#
 
 LOGFILE="/var/log/puppet/masterhttp.log"
 MSG_CLIENTS_CRITICAL=""

@@ -1,0 +1,6 @@
+# This is the default file for the check_puppetmaster_masterhttp Nagios/Shinken Plugin
+# Hosts which are excluded from the check can be defined here
+#
+#IGNORE_HOSTS="domain.tld domain2.tld"
+
+IGNORE_HOSTS="" 
