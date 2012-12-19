@@ -1,0 +1,64 @@
+#!/bin/bash
+# Nagios/Shinken plugin to check the node status on a puppetmaster.
+# The script is originated by Bernd Adamowicz but has been modified to run under Bash 4.1.5 by Daniel Taschik (daniel@taschik.de)
+# Date: 19.12.2012
+
+LOGFILE="/var/log/puppet/masterhttp.log"
+MSG_CLIENTS_CRITICAL=""
+MSG_CLIENTS_WARNING=""
+TIME_CRITICAL=3600
+TIME_WARNING=1800
+CRITICAL_COUNT=0
+CRITICAL_WARN=0                                                                                                                        
+NOW=`date "+%s"`
+
+# Override settings from a config file if one exists.
+if [ -f /etc/default/check_puppetmaster_masterhttp ]; then
+  . /etc/default/check_puppetmaster_masterhttp
+fi
+
+#
+# Get the list of all nodes from Puppet's CA:
+#
+
+for node in `sudo /usr/bin/puppet cert -la | awk '/^\+/ {print $2}'`; do
+node=`echo $node | tr -ds '"' ''`
+LASTRUN=`grep "${node}" "${LOGFILE}" | tail -1 | awk '{ print $1 " " $2 }' | sed 's/\[//' | sed 's/\]//'`;
+# Check time difference of host if he's
+# available inside the logfile. (Roling logs!)
+
+# Check whether we can ignore this host.
+
+if [ -n "${IGNORE_HOSTS}" ]; then
+    if [[ "$IGNORE_HOSTS" =~ "${node}" ]]
+        then
+            continue
+    fi
+fi
+if [[ "x$LASTRUN" = "x"  ]]; then
+    LASTRUN=`date "+%s" -d "$LASTRUN"`
+    TIMEDIFF=`expr $NOW - $LASTRUN`
+    if [ $TIMEDIFF -gt $TIME_CRITICAL ]; then
+                MSG_CLIENTS_CRITICAL+="${node}, "
+                let "CRITICAL_COUNT += 1"
+    elif [ $TIMEDIFF -gt $TIME_WARNING ]; then
+        MSG_CLIENTS_WARNING+="${node}, "
+        let "CRITICAL_WARN += 1"
+    fi
+fi
+
+done
+
+
+# Now evaluate the results..
+# If critical hosts are present, the warning hosts # are hidden (which is OK).
+if [ $CRITICAL_COUNT -gt 0 ]; then
+        echo "${CRITICAL_COUNT} Puppet client(s) not reporting for more than ${TIME_CRITICAL}s : $MSG_CLIENTS_CRITICAL"
+        exit 2
+elif [ $CRITICAL_WARN -gt 0 ]; then
+        echo "${CRITICAL_WARN} Puppet client(s) not reporting for more than ${TIME_WARNING}s: $MSG_CLIENTS_WARNING"
+        exit 1
+else   
+        echo "All Puppet clients reporting as expected"
+        exit 0
+fi
